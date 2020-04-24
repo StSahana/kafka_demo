@@ -1,0 +1,25 @@
+{
+     "type": "record",
+     "name": "http_data",
+     "fields": [
+       { "name": "accesstime", "type": "string" },
+       { "name": "srcip", "type": ["string","null"]},
+       { "name": "srcport", "type": ["int","null"] },
+       { "name": "destip", "type":["string","null"] },
+       { "name": "destport", "type": ["int","null"] },
+       { "name": "host", "type": ["string","null"] },
+       { "name": "url", "type": ["string","null"] },
+       { "name": "method", "type": ["string","null"] },
+       { "name": "cookie", "type": ["string","null"] },
+       { "name": "useragent", "type": ["string","null"] },
+       { "name": "referer", "type": ["string","null"] },
+       { "name": "postcontent", "type": ["string","null"] },
+       { "name": "responsecode", "type": ["string","null"] },
+       { "name": "responselength", "type": ["string","null"] },
+       { "name": "responsecontent", "type": ["string","null"] },
+       { "name": "contenttype", "type": ["string","null"] },
+       { "name": "responselocation", "type": ["string","null"] },
+       { "name": "day", "type": "string" },
+       { "name": "hour", "type": "string" }
+     ]
+}
