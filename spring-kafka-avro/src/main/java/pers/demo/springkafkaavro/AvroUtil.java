@@ -12,15 +12,15 @@ import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * avro 序列化  反序列化
+ * @Author Stsahana
+ */
 @Component
 @Slf4j
 public class AvroUtil {
@@ -28,11 +28,12 @@ public class AvroUtil {
 
     /**
      * 只有一层的schema结构，复杂类型未做处理
+     *
      * @param schema
      * @param jsonObject
      * @return
      */
-    public byte[] object2Byte(Schema schema, JSONObject jsonObject){
+    public byte[] object2Byte(Schema schema, JSONObject jsonObject) {
         GenericData.Record propertyData = new GenericData.Record(schema);
         GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
         List<Schema.Field> fields = schema.getFields();
@@ -40,8 +41,8 @@ public class AvroUtil {
         BinaryEncoder binaryEncoder = EncoderFactory.get().binaryEncoder(byteArrayOutS, null);
         try {
             for (Schema.Field field : fields) {
-                log.debug("field:{}",field.name(),field.schema());
-                switch(field.schema().getType().toString()){
+                log.debug("field:{}", field.name(), field.schema());
+                switch (field.schema().getType().toString()) {
                     case "LONG":
                         propertyData.put(field.name(), jsonObject.getLongValue(field.name()));
                         break;
@@ -54,7 +55,7 @@ public class AvroUtil {
                 }
             }
             // write to encoder
-             writer.write(propertyData, binaryEncoder);
+            writer.write(propertyData, binaryEncoder);
             binaryEncoder.flush();
             byteArrayOutS.flush();
             return byteArrayOutS.toByteArray();
@@ -67,11 +68,12 @@ public class AvroUtil {
 
     /**
      * 只有一层的schema结构，复杂类型未做处理
+     *
      * @param schema
      * @param jsonArray
      * @return
      */
-    public byte[] array2Byte(Schema schema, JSONArray jsonArray){
+    public byte[] array2Byte(Schema schema, JSONArray jsonArray) {
         GenericData.Record propertyData = new GenericData.Record(schema);
         GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
         List<Schema.Field> fields = schema.getFields();
@@ -79,14 +81,14 @@ public class AvroUtil {
         BinaryEncoder binaryEncoder = EncoderFactory.get().binaryEncoder(byteArrayOutS, null);
         try {
             for (int i = 0; i < jsonArray.size(); i++) {
-                JSONObject jsonObject=jsonArray.getJSONObject(i);
+                JSONObject jsonObject = jsonArray.getJSONObject(i);
                 for (Schema.Field field : fields) {
-                    log.debug("field:{}",field.name(),field.schema());
-                    if(jsonObject.containsKey(field.name())&&null==jsonObject.getString(field.name())){
+                    log.debug("field:{}", field.name(), field.schema());
+                    if (jsonObject.containsKey(field.name()) && null == jsonObject.getString(field.name())) {
                         propertyData.put(field.name(), "NULL");
                         continue;
                     }
-                    switch(field.schema().getType().toString()){
+                    switch (field.schema().getType().toString()) {
                         case "LONG":
                             propertyData.put(field.name(), jsonObject.getLongValue(field.name()));
                             break;
@@ -110,30 +112,33 @@ public class AvroUtil {
         return null;
     }
 
-    public JSONArray byte2Array(byte[] records,Schema schema){
+    /**
+     * 仅一层结构的反序列化，复杂类型未做处理
+     *
+     * @param records
+     * @param schema
+     * @return
+     */
+    public JSONArray byte2Array(byte[] records, Schema schema) {
         List<Schema.Field> fields = schema.getFields();
         GenericData.Record propertyData = new GenericData.Record(schema);
         GenericDatumReader<GenericRecord> propertyReader = new GenericDatumReader<>(schema);
-        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(records , null);
+        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(records, null);
         GenericRecord propertyRecord;
         JSONArray jsonArray = new JSONArray();
         try {
             while (!decoder.isEnd()) {
-
-                JSONObject jsonObject = new JSONObject();
                 propertyRecord = propertyReader.read(propertyData, decoder);
-                if (null != propertyRecord) {
-                    for (Schema.Field field : fields) {
-                        if (null != propertyRecord.get(field.name())) {
-                            jsonObject.put(field.name(), propertyRecord.get(field.name()).toString());
-                        } else {
-                            jsonObject.put(field.name(), "NULL");
-                        }
-                    }
-                }
-//                if (null == jsonObject.getString("c_msisdn") || null == jsonObject.getString("c_imei") || null == jsonObject.getString("c_imsi")) {
-//                    //不要三码不全的记录
-//                    continue;
+                JSONObject jsonObject = AvroJsonUtil.avroToJSON(propertyRecord, schema.getFields());
+//                JSONObject jsonObject = new JSONObject();
+//                if (null != propertyRecord) {
+//                    for (Schema.Field field : fields) {
+//                        if (null != propertyRecord.get(field.name())) {
+//                            jsonObject.put(field.name(), propertyRecord.get(field.name()).toString());
+//                        } else {
+//                            jsonObject.put(field.name(), "NULL");
+//                        }
+//                    }
 //                }
                 jsonArray.add(jsonObject);
             }

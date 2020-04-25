@@ -12,9 +12,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-/** Avro to json object util class. */
+/**
+ * Avro to json object util class.
+ * @Author Stsahana
+ */
 public class AvroJsonUtil {
-    /** Transform the generic record to json object by schema info. */
+    /**
+     * Transform the generic record to json object by schema info.
+     */
     public static JSONObject avroToJSON(GenericRecord genericRecord, List<Schema.Field> fields) {
         JSONObject jsonObject = new JSONObject();
         for (int i = 0; i < fields.size(); i++) {
