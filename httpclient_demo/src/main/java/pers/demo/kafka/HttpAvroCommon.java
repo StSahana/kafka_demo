@@ -41,22 +41,22 @@ public class HttpAvroCommon {
         //数据序列化
         GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<GenericRecord>(schema);
         // ~10MB
-            ByteArrayOutputStream out = new ByteArrayOutputStream(10000000);
-            BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(10000000);
+        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
         for (int i = 0; i < 1; i++) {
             // 构造一批数据,推荐大小为5MB左右
             out.reset();
             for (int j = 0; j < 10; j++) {
                 GenericRecord record = new GenericData.Record(schema);
                 for (Schema.Field field : schema.getFields()) {
-                    if (field.schema().getType().getName().equals("string")){
-                        record.put(field.name(),"stringTest");
-                    }else if(field.schema().getType().getName().equals("union")){
-                        if (field.schema().getTypes().get(0).getName().equals("string")){
-                            record.put(field.name(),"stringTestUnion");
+                    if (field.schema().getType().getName().equals("string")) {
+                        record.put(field.name(), "stringTest");
+                    } else if (field.schema().getType().getName().equals("union")) {
+                        if (field.schema().getTypes().get(0).getName().equals("string")) {
+                            record.put(field.name(), "stringTestUnion");
                         }
-                        if (field.schema().getTypes().get(0).equals("int")){
-                            record.put(field.name(),123);
+                        if (field.schema().getTypes().get(0).equals("int")) {
+                            record.put(field.name(), 123);
                         }
                     }
                 }

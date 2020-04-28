@@ -13,7 +13,7 @@ public class ParseChema {
         for (Schema.Field field : schema.getFields()) {
             System.out.println(field.name());
             System.out.println(field.schema().getType().getName());
-            if(field.schema().getType().getName().equals("union")){
+            if (field.schema().getType().getName().equals("union")) {
                 System.out.println(field.schema().getTypes().get(0).getName());
             }
         }

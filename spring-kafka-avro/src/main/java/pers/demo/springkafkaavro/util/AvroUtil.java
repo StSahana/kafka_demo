@@ -1,4 +1,4 @@
-package pers.demo.springkafkaavro;
+package pers.demo.springkafkaavro.util;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -19,6 +19,7 @@ import java.util.List;
 
 /**
  * avro 序列化  反序列化
+ *
  * @Author Stsahana
  */
 @Component

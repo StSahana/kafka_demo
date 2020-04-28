@@ -1,4 +1,4 @@
-package pers.demo.springkafkaavro;
+package pers.demo.springkafkaavro.util;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -14,6 +14,7 @@ import java.util.Map;
 
 /**
  * Avro to json object util class.
+ *
  * @Author Stsahana
  */
 public class AvroJsonUtil {
