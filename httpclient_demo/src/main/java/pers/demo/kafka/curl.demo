@@ -1,0 +1,10 @@
+curl -X POST \
+  http://192.168.1.65:39100/ \
+  -H 'Content-Type: binary/octet-stream' \
+  -H 'Format: csv' \
+  -H 'Password: ' \
+  -H 'Postman-Token: d1a03f13-270a-4eff-8c01-2e91d8a792cd' \
+  -H 'Topic: bb_proxy_request_topic' \
+  -H 'User: ' \
+  -H 'cache-control: no-cache' \
+  -d '<?xml version="1.0" encoding="UTF-8"?><info currentDate="2020-04-26 14:21:04" format="request" id="1912276171" logNum="1" taskId="1912276171" totalNum="1" type="LICENSE-TASK" userId="rzxuser_bb_1_01"><log endTime="2020-04-25 11:04:49" id="0" licenseDesc="License Desc..." licenseDocFile="" licenseDocName="" licenseFile="test-string" licenseFileMd5="" licenseFileName="test-string" licenseFileSize="0" licenseFileType="jpg" licenseId="test-string" licenseStatus="1" provice="-1" provider="Unkown writer" startTime="2020-04-22 11:04:49"/></info>'
