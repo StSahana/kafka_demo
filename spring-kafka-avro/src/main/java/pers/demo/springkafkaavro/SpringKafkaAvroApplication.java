@@ -16,6 +16,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import pers.demo.springkafkaavro.util.AvroUtil;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -32,7 +33,7 @@ public class SpringKafkaAvroApplication {
     @Autowired
     KafkaTemplate<String, byte[]> kafkaTemplate;
     Schema schema;
-
+    AtomicLong atomicLong=new AtomicLong(0);
 
     /**
      * 在spring 装载主类时将schema初始化
@@ -67,10 +68,8 @@ public class SpringKafkaAvroApplication {
     private void processMessage(ConsumerRecord<String, byte[]> record) {
         byte[] arr = record.value();
         JSONArray jsonArray = new AvroUtil().byte2Array(arr, schema);
-        byte[] bytes = new AvroUtil().array2Byte(schema, jsonArray);
-        kafkaTemplate.send("xx_topic", bytes);
-//        log.info("{}", jsonArray.get(0));
-//        log.info("size:{}\n", jsonArray.size());
+        log.info("batch size:{}",jsonArray.size());
+        log.info("total size:{}",atomicLong.addAndGet(jsonArray.size()));
     }
 
 
