@@ -25,4 +25,6 @@ public class SpringKafkaAutoconfigApplication {
 //        kafkaTemplate.send("test1",record.value());
     }
 
+
+
 }

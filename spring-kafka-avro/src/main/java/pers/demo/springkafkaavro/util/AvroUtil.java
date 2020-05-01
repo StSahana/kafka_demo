@@ -15,6 +15,9 @@ import org.apache.avro.io.EncoderFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -28,8 +31,8 @@ public class AvroUtil {
 
 
     /**
+     * 将jsonObject封装成Schema
      * 只有一层的schema结构，复杂类型未做处理
-     *
      * @param schema
      * @param jsonObject
      * @return
@@ -148,5 +151,68 @@ public class AvroUtil {
             log.error("Deserialize Exception:", e);
         }
         return jsonArray;
+    }
+
+    /**
+     *  根据schema获取随机内容
+     * @param schema
+     * @return
+     */
+    public static Object getDefaultData(Schema schema) {
+        Object data = null;
+        switch (schema.getType()) {
+            case INT:
+                data = 1;
+                break;
+            case LONG:
+                data = 1234567890123L;
+                break;
+            case BOOLEAN:
+                data = true;
+                break;
+            case FLOAT:
+                data = 1.0f;
+                break;
+            case DOUBLE:
+                data = 1.0d;
+                break;
+            case STRING:
+                data = "test-string";
+                break;
+            case FIXED:
+                data = ByteBuffer.wrap("test-fixed".getBytes());
+                break;
+            case BYTES:
+                data = ByteBuffer.wrap("test-bytes".getBytes());
+                break;
+            case ENUM:
+                data = schema.getEnumSymbols().get(0);
+                break;
+            case ARRAY:
+                Object element = getDefaultData(schema.getElementType());
+                data = Arrays.asList(element);
+                break;
+            case MAP:
+                Object value = getDefaultData(schema.getValueType());
+                data = new HashMap<String, Object>();
+                ((HashMap) data).put("mapKey", value);
+                break;
+            case UNION:
+                for (Schema unionSchema : schema.getTypes()) {
+                    if (unionSchema.getType() != Schema.Type.NULL) {
+                        data = getDefaultData(unionSchema);
+                        break;
+                    }
+                }
+            case RECORD:
+                List<Schema.Field> fields = schema.getFields();
+                GenericRecord record = new GenericData.Record(schema);
+                for (Schema.Field field : fields) {
+                    record.put(field.name(),getDefaultData(field.schema()));
+                }
+                data = record;
+                break;
+        }
+        return data;
     }
 }
