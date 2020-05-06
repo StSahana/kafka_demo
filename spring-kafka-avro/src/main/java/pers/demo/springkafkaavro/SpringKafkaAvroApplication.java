@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import pers.demo.springkafkaavro.util.AvroUtil;
+import pers.demo.springkafkaavro.util.SchemaUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,28 +39,9 @@ public class SpringKafkaAvroApplication {
     AvroUtil avroUtil;
     @Autowired
     KafkaTemplate<String, byte[]> kafkaTemplate;
-    Schema schema;
+    @Autowired
+    SchemaUtil schemaUtil;
     AtomicLong atomicLong=new AtomicLong(0);
-
-    /**
-     * 在spring 装载主类时将schema初始化
-     *
-     * @param baseUrl
-     * @param TOPIC
-     */
-    SpringKafkaAvroApplication(@Value("${spring.kafka.consumer.properties.schema.registry.url}") String baseUrl,
-                               @Value("${topics}") String TOPIC) {
-        SchemaRegistryClient client = new CachedSchemaRegistryClient(baseUrl, 100);
-        String stringSchema = null;
-        try {
-            stringSchema = client.getLatestSchemaMetadata(TOPIC).getSchema();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (RestClientException e) {
-            e.printStackTrace();
-        }
-        this.schema = new Schema.Parser().parse(stringSchema);
-    }
 
     public static void main(String[] args) {
         SpringApplication.run(SpringKafkaAvroApplication.class, args);
@@ -70,10 +52,11 @@ public class SpringKafkaAvroApplication {
      *
      * @param record
      */
-    @KafkaListener(topics = "#{'${topics}'}", concurrency = "1")
+    @KafkaListener(topics = "#{'${topics}'.split(',')}", concurrency = "#{'${concurrency}'}")
     private void processMessage(ConsumerRecord<String, byte[]> record) {
         byte[] arr = record.value();
-        JSONArray jsonArray = new AvroUtil().byte2Array(arr, schema);
+        JSONArray jsonArray = new AvroUtil().byte2Array(arr, schemaUtil.getSchema(record.topic()));
+        log.debug("first record:{}",jsonArray.get(0));
         log.info("batch size:{}",jsonArray.size());
         log.info("total size:{}",atomicLong.addAndGet(jsonArray.size()));
     }
