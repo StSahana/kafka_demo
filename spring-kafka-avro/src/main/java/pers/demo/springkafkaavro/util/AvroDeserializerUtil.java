@@ -2,35 +2,85 @@ package pers.demo.springkafkaavro.util;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.BinaryDecoder;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.util.Utf8;
+import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Avro to json object util class.
+ * avro 序列化  反序列化
  *
  * @Author Stsahana
  */
-public class AvroJsonUtil {
+@Component
+@Slf4j
+public class AvroDeserializerUtil {
+
     /**
-     * Transform the generic record to json object by schema info.
+     * transfer kafka records to JsonArray
+     * @param records
+     * @param schema
+     * @return
+     */
+    public JSONArray byte2Array(byte[] records, Schema schema) {
+        List<Schema.Field> fields = schema.getFields();
+        GenericData.Record propertyData = new GenericData.Record(schema);
+        GenericDatumReader<GenericRecord> propertyReader = new GenericDatumReader<>(schema);
+        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(records, null);
+        GenericRecord propertyRecord;
+        JSONArray jsonArray = new JSONArray();
+        try {
+            while (!decoder.isEnd()) {
+                propertyRecord = propertyReader.read(propertyData, decoder);
+                JSONObject jsonObject = avroToJSON(propertyRecord, schema.getFields());
+                jsonArray.add(jsonObject);
+            }
+
+        } catch (Exception e) {
+            log.error("Deserialize Exception:", e);
+        }
+        return jsonArray;
+    }
+
+
+    /**
+     *  transfer record to json
+     * @param genericRecord
+     * @param fields
+     * @return
      */
     public static JSONObject avroToJSON(GenericRecord genericRecord, List<Schema.Field> fields) {
         JSONObject jsonObject = new JSONObject();
-        for (int i = 0; i < fields.size(); i++) {
-            Schema schema = fields.get(i).schema(); // Record中每个field的schema
-            Object object = genericRecord.get(i); // 每个位置的对象
-            jsonObject.put(fields.get(i).name(), toJSONStringForAvro(object, schema).toString()); // 第一层
+        for (Schema.Field field:fields) {
+            Schema schema = field.schema(); // Record中每个field的schema
+            Object object = genericRecord.get(field.name()); // 每个位置的对象
+            jsonObject.put(field.name(), toJSONStringForAvro(object, schema).toString()); // 第一层
         }
         return jsonObject;
     }
 
+    /**
+     *  decode object
+     * @param object
+     * @param schema
+     * @return
+     */
     private static Object toJSONStringForAvro(Object object, Schema schema) {
         if (null == object) {
             return "NULL";
@@ -56,12 +106,7 @@ public class AvroJsonUtil {
                 return jsonObject;
             case RECORD:
                 GenericRecord record = (GenericRecord) object;
-                jsonObject = new JSONObject();
-                List<Schema.Field> fields = record.getSchema().getFields();
-                for (int i = 0; i < fields.size(); i++) {
-                    jsonObject.put(
-                            fields.get(i).name(), toJSONStringForAvro(record.get(i), fields.get(i).schema()));
-                }
+                jsonObject = avroToJSON(record, schema.getFields());
                 return jsonObject;
             case BYTES:
                 ByteBuffer byteBuffer = (ByteBuffer) object;
