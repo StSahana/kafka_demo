@@ -1,38 +1,30 @@
 package pers.demo.springkafkaavro.util;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.util.TypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.EncoderFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-/**
- * avro 序列化  反序列化
- *
- * @Author Stsahana
- */
+
 @Component
 @Slf4j
-public class AvroUtil {
-
+public class AvroSerializerUtil {
 
     /**
-     * 将jsonObject封装成Schema
-     * 只有一层的schema结构，复杂类型未做处理
+     * 将jsonObject封装成Schema定义的结构，复杂类型未做处理
+     * https://avro.apache.org/docs/current/spec.html#schema_record
      * @param schema
      * @param jsonObject
      * @return
@@ -46,17 +38,7 @@ public class AvroUtil {
         try {
             for (Schema.Field field : fields) {
                 log.debug("field:{}", field.name(), field.schema());
-                switch (field.schema().getType().toString()) {
-                    case "LONG":
-                        propertyData.put(field.name(), jsonObject.getLongValue(field.name()));
-                        break;
-                    case "INT":
-                        propertyData.put(field.name(), jsonObject.getIntValue(field.name()));
-                        break;
-                    default:
-                        propertyData.put(field.name(), jsonObject.getString(field.name()));
-                        break;
-                }
+                propertyData.put(field.name(),toObject(field.schema(),jsonObject.get(field.name())));
             }
             // write to encoder
             writer.write(propertyData, binaryEncoder);
@@ -69,43 +51,97 @@ public class AvroUtil {
         return null;
     }
 
+    public Object toObject(Schema schema,Object object){
+        Object result = null;
+        switch (schema.getType()) {
+            case LONG:
+                result=TypeUtils.castToLong(object);
+                break;
+            case RECORD:
+                GenericData.Record item = new GenericData.Record(schema);
+                JSONObject jsonObject;
+                if (object instanceof JSONObject) {
+                    jsonObject= (JSONObject)object;
+                } else if (object instanceof Map) {
+                    jsonObject= new JSONObject((Map)object);
+                } else {
+                    jsonObject=object instanceof String ? JSON.parseObject((String)object) : (JSONObject)JSON.toJSON(object);
+                }
+                for (Schema.Field field:schema.getFields()){
+                   item.put(field.name(),toObject(field.schema(),jsonObject.get(field.name())));
+                }
+                result= item;
+                break;
+            case ENUM:
+                break;
+            case ARRAY:
+                List<Object> records = new ArrayList<>();
+                JSONArray jsonArray;
+                if (object instanceof JSONArray) {
+                    jsonArray=(JSONArray)object;
+                } else if (object instanceof List) {
+                    jsonArray=new JSONArray((List)object);
+                } else {
+                    jsonArray= object instanceof String ? (JSONArray)JSON.parse((String)object) : (JSONArray)JSON.toJSON(object);
+                }
+                Schema itemSchema = schema.getElementType();
+                for(int i=0;i<jsonArray.size();i++){
+                    Object o=toObject(itemSchema,jsonArray.get(i));
+//                    item.put();
+                    records.add(o);
+                }
+                result=records;
+                break;
+            case MAP:
+                result=JSON.parseObject(object.toString()).getInnerMap();
+                break;
+            case UNION://按string处理-----此处有问题
+//              result=(String) object;
+                break;
+            case FIXED://定长字节
+                result=TypeUtils.castToByte(object);
+                break;
+            case STRING:
+                result=(String) object;
+                break;
+            case BYTES:
+                result=TypeUtils.castToByte(object);
+                break;
+            case INT:
+                result=TypeUtils.castToInt(object);
+                break;
+            case BOOLEAN:
+                result=TypeUtils.castToBoolean(object);
+                break;
+            case FLOAT:
+                result=TypeUtils.castToFloat(object);
+                break;
+            case DOUBLE:
+                result=TypeUtils.castToDouble(object);
+                break;
+            case NULL:
+                result=null;
+                break;
+        }
+        return  result;
+    }
 
     /**
-     * 只有一层的schema结构，复杂类型未做处理
-     *
+     * jsonArray 转换成byte
      * @param schema
      * @param jsonArray
      * @return
      */
     public byte[] array2Byte(Schema schema, JSONArray jsonArray) {
-        GenericData.Record propertyData = new GenericData.Record(schema);
-        GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
-        List<Schema.Field> fields = schema.getFields();
+        GenericDatumWriter<Object> writer = new GenericDatumWriter<>(schema);
         ByteArrayOutputStream byteArrayOutS = new ByteArrayOutputStream(1024 * 1024 * 4);
         BinaryEncoder binaryEncoder = EncoderFactory.get().binaryEncoder(byteArrayOutS, null);
         try {
             for (int i = 0; i < jsonArray.size(); i++) {
-                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                for (Schema.Field field : fields) {
-                    log.debug("field:{}", field.name(), field.schema());
-                    if (jsonObject.containsKey(field.name()) && null == jsonObject.getString(field.name())) {
-                        propertyData.put(field.name(), "NULL");
-                        continue;
-                    }
-                    switch (field.schema().getType().toString()) {
-                        case "LONG":
-                            propertyData.put(field.name(), jsonObject.getLongValue(field.name()));
-                            break;
-                        case "INT":
-                            propertyData.put(field.name(), jsonObject.getIntValue(field.name()));
-                            break;
-                        default:
-                            propertyData.put(field.name(), jsonObject.getString(field.name()));
-                            break;
-                    }
-                }
+                Object object = jsonArray.get(i);
+                Object result = toObject(schema, object);
                 // write to encoder
-                writer.write(propertyData, binaryEncoder);
+                writer.write(result, binaryEncoder);
             }
             binaryEncoder.flush();
             byteArrayOutS.flush();
@@ -114,43 +150,6 @@ public class AvroUtil {
             log.error("Encoder exception:", e);
         }
         return null;
-    }
-
-    /**
-     * 仅一层结构的反序列化，复杂类型未做处理
-     *
-     * @param records
-     * @param schema
-     * @return
-     */
-    public JSONArray byte2Array(byte[] records, Schema schema) {
-        List<Schema.Field> fields = schema.getFields();
-        GenericData.Record propertyData = new GenericData.Record(schema);
-        GenericDatumReader<GenericRecord> propertyReader = new GenericDatumReader<>(schema);
-        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(records, null);
-        GenericRecord propertyRecord;
-        JSONArray jsonArray = new JSONArray();
-        try {
-            while (!decoder.isEnd()) {
-                propertyRecord = propertyReader.read(propertyData, decoder);
-                JSONObject jsonObject = AvroJsonUtil.avroToJSON(propertyRecord, schema.getFields());
-//                JSONObject jsonObject = new JSONObject();
-//                if (null != propertyRecord) {
-//                    for (Schema.Field field : fields) {
-//                        if (null != propertyRecord.get(field.name())) {
-//                            jsonObject.put(field.name(), propertyRecord.get(field.name()).toString());
-//                        } else {
-//                            jsonObject.put(field.name(), "NULL");
-//                        }
-//                    }
-//                }
-                jsonArray.add(jsonObject);
-            }
-
-        } catch (Exception e) {
-            log.error("Deserialize Exception:", e);
-        }
-        return jsonArray;
     }
 
     /**
@@ -215,4 +214,6 @@ public class AvroUtil {
         }
         return data;
     }
+
+
 }
