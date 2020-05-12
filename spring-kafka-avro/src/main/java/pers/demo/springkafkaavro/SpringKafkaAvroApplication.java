@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SpringKafkaAvroApplication {
     @Autowired
     AvroDeserializerUtil avroUtil;
-    @Autowired
-    KafkaTemplate<String, byte[]> kafkaTemplate;
+//    @Autowired
+//   KafkaTemplate<String, byte[]> kafkaTemplate;
     @Autowired
     SchemaUtil schemaUtil;
     AtomicLong atomicLong=new AtomicLong(0);
@@ -46,6 +46,7 @@ public class SpringKafkaAvroApplication {
     private void processMessage(ConsumerRecord<String, byte[]> record) {
         byte[] arr = record.value();
         JSONArray jsonArray = new AvroDeserializerUtil().byte2Array(arr, schemaUtil.getSchema(record.topic()));
+       
         log.debug("{}=>first record:{}",record.topic(),jsonArray.get(0));
 //        byte[] arr2=new AvroSerializerUtil().array2Byte(schemaUtil.getSchema(record.topic()),jsonArray);
 //       JSONArray jsonArray2 = new AvroDeserializerUtil().byte2Array(arr2, schemaUtil.getSchema(record.topic()));
