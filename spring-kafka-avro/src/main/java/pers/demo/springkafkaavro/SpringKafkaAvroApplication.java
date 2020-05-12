@@ -46,11 +46,11 @@ public class SpringKafkaAvroApplication {
     private void processMessage(ConsumerRecord<String, byte[]> record) {
         byte[] arr = record.value();
         JSONArray jsonArray = new AvroDeserializerUtil().byte2Array(arr, schemaUtil.getSchema(record.topic()));
-        log.info("first record:{}",jsonArray.get(0));
+        log.debug("{}=>first record:{}",record.topic(),jsonArray.get(0));
 //        byte[] arr2=new AvroSerializerUtil().array2Byte(schemaUtil.getSchema(record.topic()),jsonArray);
 //       JSONArray jsonArray2 = new AvroDeserializerUtil().byte2Array(arr2, schemaUtil.getSchema(record.topic()));
-        log.info("batch size:{}",jsonArray.size());
-        log.info("total size:{}",atomicLong.addAndGet(jsonArray.size()));
+        log.info("{}=>batch size:{}",record.topic(),jsonArray.size());
+        log.info("{}=>total size:{}",record.topic(),atomicLong.addAndGet(jsonArray.size()));
     }
 
 

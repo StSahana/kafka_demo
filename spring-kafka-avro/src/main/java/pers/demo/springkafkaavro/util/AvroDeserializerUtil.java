@@ -33,16 +33,16 @@ import java.util.Map;
 public class AvroDeserializerUtil {
 
     /**
-     * transfer kafka records to JsonArray
-     * @param records
+     * transfer byte array to JsonArray
+     * @param values
      * @param schema
      * @return
      */
-    public JSONArray byte2Array(byte[] records, Schema schema) {
+    public JSONArray byte2Array(byte[] values, Schema schema) {
         List<Schema.Field> fields = schema.getFields();
         GenericData.Record propertyData = new GenericData.Record(schema);
         GenericDatumReader<GenericRecord> propertyReader = new GenericDatumReader<>(schema);
-        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(records, null);
+        BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(values, null);
         GenericRecord propertyRecord;
         JSONArray jsonArray = new JSONArray();
         try {
@@ -51,7 +51,6 @@ public class AvroDeserializerUtil {
                 JSONObject jsonObject = avroToJSON(propertyRecord, schema.getFields());
                 jsonArray.add(jsonObject);
             }
-
         } catch (Exception e) {
             log.error("Deserialize Exception:", e);
         }
