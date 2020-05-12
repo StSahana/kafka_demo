@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -31,6 +32,12 @@ public class SpringKafkaAvroApplication {
 //   KafkaTemplate<String, byte[]> kafkaTemplate;
     @Autowired
     SchemaUtil schemaUtil;
+    @Value("${statistic.enable}")
+    private  boolean enableStatistic;
+    @Value("print.all.enable")
+    private boolean enablePrintAll;
+    @Value("print.first.enable")
+    private boolean enablePrintFirst;
     AtomicLong atomicLong=new AtomicLong(0);
 
     public static void main(String[] args) {
@@ -46,12 +53,17 @@ public class SpringKafkaAvroApplication {
     private void processMessage(ConsumerRecord<String, byte[]> record) {
         byte[] arr = record.value();
         JSONArray jsonArray = new AvroDeserializerUtil().byte2Array(arr, schemaUtil.getSchema(record.topic()));
-       
-        log.debug("{}=>first record:{}",record.topic(),jsonArray.get(0));
+        if (enablePrintAll)
+            log.info("{}=>all record:{}",record.topic(),jsonArray);
+        if(enablePrintFirst)
+            log.info("{} first value:{}",record.topic(),jsonArray.get(0));
 //        byte[] arr2=new AvroSerializerUtil().array2Byte(schemaUtil.getSchema(record.topic()),jsonArray);
 //       JSONArray jsonArray2 = new AvroDeserializerUtil().byte2Array(arr2, schemaUtil.getSchema(record.topic()));
-        log.info("{}=>batch size:{}",record.topic(),jsonArray.size());
-        log.info("{}=>total size:{}",record.topic(),atomicLong.addAndGet(jsonArray.size()));
+        if (enableStatistic){
+            log.info("{}=>batch size:{}",record.topic(),jsonArray.size());
+            log.info("{}=>total size:{}",record.topic(),atomicLong.addAndGet(jsonArray.size()));
+        }
+
     }
 
 
