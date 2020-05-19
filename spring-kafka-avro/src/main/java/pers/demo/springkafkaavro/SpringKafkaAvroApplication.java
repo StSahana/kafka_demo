@@ -34,9 +34,9 @@ public class SpringKafkaAvroApplication {
     SchemaUtil schemaUtil;
     @Value("${statistic.enable}")
     private  boolean enableStatistic;
-    @Value("print.all.enable")
+    @Value("${print.all.enable}")
     private boolean enablePrintAll;
-    @Value("print.first.enable")
+    @Value("${print.first.enable}")
     private boolean enablePrintFirst;
     AtomicLong atomicLong=new AtomicLong(0);
 
