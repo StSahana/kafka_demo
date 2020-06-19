@@ -109,11 +109,8 @@ public class AvroDeserializerUtil {
                 return jsonObject;
             case BYTES:
                 ByteBuffer byteBuffer = (ByteBuffer) object;
-                byte[] binary = new byte[byteBuffer.capacity()];
-                byteBuffer.get(binary, 0, binary.length);
-                String string = new String(binary, StandardCharsets.UTF_8);
-                byteBuffer.clear();
-                return string;
+                Charset charset = Charset.forName("utf-8");
+                return charset.decode(byteBuffer).toString();
             default:
                 return String.valueOf(object);
         }
